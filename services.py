@@ -258,3 +258,4 @@ def seed_default_budget(session):
         total_budget=1000,
         currency="CHF",
         categories=categories,
+    )
