@@ -237,4 +237,3 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-6") as content:
 show_home()
 
 ui.run()
-
