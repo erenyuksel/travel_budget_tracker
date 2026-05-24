@@ -449,6 +449,7 @@ Implemented features:
 Possible future improvements:
 
 - User authentication
+- Add Categories
 - Multiple users
 - Export expenses to CSV
 - Charts for spending analytics
