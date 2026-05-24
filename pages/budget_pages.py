@@ -17,11 +17,6 @@ from ui_helpers import (
 )
 
 
-# -----------------------------
-# Create / Edit / Delete Budget
-# Person 1 responsibility
-# -----------------------------
-
 def show_create_budget():
     from pages.home_page import show_home
     from pages.dashboard_page import show_dashboard
@@ -90,6 +85,7 @@ def show_create_budget():
 
                 for item in category_inputs:
                     value = item["percentage_input"].value
+
                     if value is not None:
                         total += float(value)
 
@@ -160,13 +156,19 @@ def show_edit_budget(budget_id):
     with app_context.content:
         page_title(
             "Edit Vacation",
-            "Update trip details and category percentages.",
+            "Update trip details, vacation date, and category percentages.",
         )
 
         with ui.card().classes("w-full rounded-2xl shadow-sm p-6 mt-6 bg-white"):
             trip_name_input = ui.input(
                 "Trip name",
                 value=data["trip_name"],
+            ).classes("w-full")
+
+            vacation_date_input = ui.input(
+                "Vacation date",
+                value=str(data["created_at"])[:10],
+                placeholder="YYYY-MM-DD",
             ).classes("w-full")
 
             with ui.row().classes("w-full gap-4"):
@@ -213,6 +215,7 @@ def show_edit_budget(budget_id):
 
                 for item in category_inputs:
                     value = item["percentage_input"].value
+
                     if value is not None:
                         total += float(value)
 
@@ -251,6 +254,7 @@ def show_edit_budget(budget_id):
                         total_budget=total_budget_input.value,
                         currency=currency_select.value,
                         categories=categories,
+                        created_at=vacation_date_input.value,
                     )
 
                     notify_success("Vacation updated successfully.")

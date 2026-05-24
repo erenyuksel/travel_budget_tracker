@@ -13,10 +13,6 @@ from ui_helpers import (
 )
 
 
-# -----------------------------
-# Home
-# Person 1 responsibility
-# -----------------------------
 
 def show_home():
     from pages.budget_pages import (

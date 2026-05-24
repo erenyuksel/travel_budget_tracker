@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime, time
+
 from sqlalchemy import func
 
 from models import Budget, CategoryAllocation, Expense
@@ -16,6 +17,7 @@ ALLOWED_CURRENCIES = ["CHF", "EUR", "USD", "GBP", "TRY"]
 
 def create_tables(engine):
     from db import Base
+
     Base.metadata.create_all(bind=engine)
 
 
@@ -51,6 +53,28 @@ def _normalize_date(value):
         return date.fromisoformat(str(value))
     except (TypeError, ValueError):
         raise ValueError("Expense date must be a valid date in YYYY-MM-DD format.")
+
+
+def _normalize_budget_created_at(value):
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value
+
+    if isinstance(value, date):
+        return datetime.combine(value, time.min)
+
+    value = str(value).strip()
+
+    if not value:
+        raise ValueError("Vacation date cannot be empty.")
+
+    try:
+        parsed_date = date.fromisoformat(value)
+        return datetime.combine(parsed_date, time.min)
+    except (TypeError, ValueError):
+        raise ValueError("Vacation date must be a valid date in YYYY-MM-DD format.")
 
 
 def validate_category_distribution(categories):
@@ -102,6 +126,7 @@ def create_budget(session, trip_name, total_budget, currency, categories):
             total_budget=total_budget,
             currency=currency,
         )
+
         session.add(budget)
         session.flush()
 
@@ -115,10 +140,12 @@ def create_budget(session, trip_name, total_budget, currency, categories):
                 percentage=percentage,
                 allocated_amount=allocated_amount,
             )
+
             session.add(category)
 
         session.commit()
         session.refresh(budget)
+
         return budget
 
     except Exception:
@@ -272,6 +299,7 @@ def update_budget(
     total_budget=None,
     currency=None,
     categories=None,
+    created_at=None,
 ):
     budget = get_budget(session, budget_id)
 
@@ -300,6 +328,9 @@ def update_budget(
 
         if currency is not None:
             budget.currency = _validate_currency(currency)
+
+        if created_at is not None:
+            budget.created_at = _normalize_budget_created_at(created_at)
 
         existing_categories = (
             session.query(CategoryAllocation)
@@ -346,6 +377,7 @@ def update_budget(
 
             for category_id, item in prepared_categories:
                 category = existing_by_id[category_id]
+
                 percentage = _to_float(item["percentage"], "Category percentage")
 
                 category.name = item["name"].strip()
@@ -364,6 +396,7 @@ def update_budget(
 
         session.commit()
         session.refresh(budget)
+
         return budget
 
     except Exception:
@@ -396,6 +429,7 @@ def delete_budget(session, budget_id):
 
         session.delete(budget)
         session.commit()
+
         return True
 
     except Exception:
@@ -411,6 +445,7 @@ def add_expense(session, budget_id, category_id, amount, expense_date, descripti
         raise ValueError("Expense amount must be greater than 0.")
 
     budget = get_budget(session, budget_id)
+
     if budget is None:
         raise ValueError("Budget not found.")
 
@@ -419,6 +454,7 @@ def add_expense(session, budget_id, category_id, amount, expense_date, descripti
         .filter(CategoryAllocation.id == category_id)
         .first()
     )
+
     if category is None or category.budget_id != budget_id:
         raise ValueError("Category not found for this budget.")
 
@@ -430,9 +466,11 @@ def add_expense(session, budget_id, category_id, amount, expense_date, descripti
             description=description,
             expense_date=expense_date,
         )
+
         session.add(expense)
         session.commit()
         session.refresh(expense)
+
         return expense
 
     except Exception:
@@ -440,7 +478,14 @@ def add_expense(session, budget_id, category_id, amount, expense_date, descripti
         raise
 
 
-def update_expense(session, expense_id, category_id=None, amount=None, expense_date=None, description=None):
+def update_expense(
+    session,
+    expense_id,
+    category_id=None,
+    amount=None,
+    expense_date=None,
+    description=None,
+):
     expense = get_expense(session, expense_id)
 
     if expense is None:
@@ -475,6 +520,7 @@ def update_expense(session, expense_id, category_id=None, amount=None, expense_d
 
         session.commit()
         session.refresh(expense)
+
         return expense
 
     except Exception:
@@ -491,6 +537,7 @@ def delete_expense(session, expense_id):
     try:
         session.delete(expense)
         session.commit()
+
         return True
 
     except Exception:
@@ -499,7 +546,11 @@ def delete_expense(session, expense_id):
 
 
 def get_total_spent(session, budget_id):
-    total = session.query(func.sum(Expense.amount)).filter(Expense.budget_id == budget_id).scalar()
+    total = (
+        session.query(func.sum(Expense.amount))
+        .filter(Expense.budget_id == budget_id)
+        .scalar()
+    )
 
     if total is None:
         total = 0
@@ -508,7 +559,11 @@ def get_total_spent(session, budget_id):
 
 
 def get_category_spent(session, category_id):
-    total = session.query(func.sum(Expense.amount)).filter(Expense.category_id == category_id).scalar()
+    total = (
+        session.query(func.sum(Expense.amount))
+        .filter(Expense.category_id == category_id)
+        .scalar()
+    )
 
     if total is None:
         total = 0
@@ -518,6 +573,7 @@ def get_category_spent(session, category_id):
 
 def get_dashboard_data(session, budget_id):
     budget = get_budget(session, budget_id)
+
     if budget is None:
         raise ValueError("Budget not found.")
 
@@ -543,6 +599,7 @@ def get_dashboard_data(session, budget_id):
             "spent_amount": spent,
             "remaining_amount": round(category.allocated_amount - spent, 2),
         }
+
         categories_data.append(category_info)
 
     dashboard_data = {
@@ -562,7 +619,11 @@ def get_dashboard_data(session, budget_id):
 
 
 def get_category_details(session, budget_id, category_id):
-    category = session.query(CategoryAllocation).filter(CategoryAllocation.id == category_id).first()
+    category = (
+        session.query(CategoryAllocation)
+        .filter(CategoryAllocation.id == category_id)
+        .first()
+    )
 
     if category is None or category.budget_id != budget_id:
         raise ValueError("Category not found for this budget.")
@@ -577,6 +638,7 @@ def get_category_details(session, budget_id, category_id):
     )
 
     expense_list = []
+
     for expense in expenses:
         expense_data = {
             "id": expense.id,
@@ -585,6 +647,7 @@ def get_category_details(session, budget_id, category_id):
             "expense_date": expense.expense_date,
             "category_id": expense.category_id,
         }
+
         expense_list.append(expense_data)
 
     category_data = {

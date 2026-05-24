@@ -13,12 +13,7 @@ from ui_helpers import (
 )
 
 
-# -----------------------------
-# Dashboard
-# Shared page:
-# - Person 1 owns the top summary section.
-# - Person 2 owns the category cards section.
-# -----------------------------
+
 
 def show_dashboard(budget_id):
     from pages.home_page import show_home
@@ -51,7 +46,7 @@ def show_dashboard(budget_id):
                 on_click=lambda: show_edit_budget(budget_id),
             ).props("outline")
 
-        # Person 1 section: overall vacation summary
+        # overall vacation summary
         with ui.row().classes("w-full gap-4 mt-6"):
             summary_card(
                 "Total Budget",
@@ -79,7 +74,7 @@ def show_dashboard(budget_id):
             ui.linear_progress(value=progress, show_value=False).classes("mt-3")
             ui.label(percentage_text(progress)).classes("text-sm text-slate-500 mt-2")
 
-        # Person 2 section: category cards
+        # category cards
         ui.label("Categories").classes("text-2xl font-bold mt-8")
 
         with ui.grid(columns=2).classes("w-full gap-4 mt-3"):

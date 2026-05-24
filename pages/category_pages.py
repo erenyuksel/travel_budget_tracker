@@ -1,7 +1,7 @@
 from nicegui import ui
 
 import app_context
-from services import get_category_details, get_dashboard_data
+from services import get_category_details, get_dashboard_data, search_expenses
 from ui_helpers import (
     clear_content,
     empty_state,
@@ -13,11 +13,6 @@ from ui_helpers import (
     summary_card,
 )
 
-
-# -----------------------------
-# Category Details
-# Person 2 responsibility
-# -----------------------------
 
 def get_category_by_id(budget_id, category_id):
     data = get_dashboard_data(app_context.session, budget_id)
@@ -109,57 +104,139 @@ def show_category_details(budget_id, category_id):
                 "text-sm text-slate-500 mt-2"
             )
 
+        ui.label("Filter Expenses").classes("text-2xl font-bold mt-8")
+
+        with ui.card().classes("w-full rounded-2xl shadow-sm p-5 mt-3 bg-white"):
+            with ui.grid(columns=3).classes("w-full gap-4"):
+                search_input = ui.input(
+                    "Search description",
+                    placeholder="Example: dinner, train, hotel",
+                ).classes("w-full")
+
+                start_date_input = ui.input(
+                    "Start date",
+                    placeholder="YYYY-MM-DD",
+                ).classes("w-full")
+
+                end_date_input = ui.input(
+                    "End date",
+                    placeholder="YYYY-MM-DD",
+                ).classes("w-full")
+
+                min_amount_input = ui.number(
+                    "Min amount",
+                ).classes("w-full")
+
+                max_amount_input = ui.number(
+                    "Max amount",
+                ).classes("w-full")
+
+            def apply_filters():
+                try:
+                    filtered_expenses = search_expenses(
+                        session=app_context.session,
+                        budget_id=budget_id,
+                        search_text=search_input.value or None,
+                        category_id=category_id,
+                        start_date=start_date_input.value or None,
+                        end_date=end_date_input.value or None,
+                        min_amount=min_amount_input.value,
+                        max_amount=max_amount_input.value,
+                    )
+
+                    render_expenses(filtered_expenses, is_filtered=True)
+
+                except Exception as error:
+                    notify_error(error)
+
+            def clear_filters():
+                search_input.value = ""
+                start_date_input.value = ""
+                end_date_input.value = ""
+                min_amount_input.value = None
+                max_amount_input.value = None
+
+                render_expenses(data["expenses"])
+
+            with ui.row().classes("w-full justify-end gap-2 mt-4"):
+                ui.button(
+                    "Clear Filters",
+                    icon="clear",
+                    on_click=clear_filters,
+                ).props("outline")
+
+                ui.button(
+                    "Apply Filters",
+                    icon="filter_alt",
+                    on_click=apply_filters,
+                ).classes("bg-blue-600 text-white rounded-lg")
+
         ui.label("Expenses").classes("text-2xl font-bold mt-8")
 
-        expenses = data["expenses"]
+        expense_container = ui.column().classes("w-full gap-0")
 
-        if not expenses:
-            empty_state(
-                icon="receipt_long",
-                title="No expenses in this category",
-                subtitle="Add an expense directly to this category when you need it.",
-                button_label="Add Expense Here",
-                on_click=lambda: show_add_expense_dialog(
-                    budget_id=budget_id,
-                    category_id=category_id,
-                    return_category_id=category_id,
-                ),
-            )
-            return
+        def render_expenses(expenses, is_filtered=False):
+            expense_container.clear()
 
-        for expense in expenses:
-            with ui.card().classes(
-                "w-full rounded-2xl shadow-sm border border-slate-100 p-4 mt-3 bg-white"
-            ):
-                with ui.row().classes("w-full justify-between items-center"):
-                    with ui.column().classes("gap-1"):
-                        ui.label(money(expense["amount"], currency)).classes(
-                            "text-xl font-bold text-slate-800"
+            with expense_container:
+                if not expenses:
+                    if is_filtered:
+                        empty_state(
+                            icon="search_off",
+                            title="No matching expenses",
+                            subtitle="Try changing the filters or clear them.",
+                            button_label="Clear Filters",
+                            on_click=clear_filters,
                         )
-                        ui.label(expense["description"] or "No description").classes(
-                            "text-slate-500"
-                        )
-                        ui.label(str(expense["expense_date"])).classes(
-                            "text-xs text-slate-400"
-                        )
-
-                    with ui.row().classes("gap-2"):
-                        ui.button(
-                            "Edit",
-                            icon="edit",
-                            on_click=lambda e_id=expense["id"]: show_edit_expense(
-                                e_id,
-                                back_budget_id=budget_id,
-                                back_category_id=category_id,
+                    else:
+                        empty_state(
+                            icon="receipt_long",
+                            title="No expenses in this category",
+                            subtitle="Add an expense directly to this category when you need it.",
+                            button_label="Add Expense Here",
+                            on_click=lambda: show_add_expense_dialog(
+                                budget_id=budget_id,
+                                category_id=category_id,
+                                return_category_id=category_id,
                             ),
-                        ).props("outline")
+                        )
+                    return
 
-                        ui.button(
-                            "Delete",
-                            icon="delete",
-                            on_click=lambda e_id=expense["id"]: confirm_delete_expense(
-                                e_id,
-                                budget_id,
-                                category_id,
-                            ),
-                        ).classes("bg-red-600 text-white rounded-lg")
+                for expense in expenses:
+                    with ui.card().classes(
+                        "w-full rounded-2xl shadow-sm border border-slate-100 p-4 mt-3 bg-white"
+                    ):
+                        with ui.row().classes("w-full justify-between items-center"):
+                            with ui.column().classes("gap-1"):
+                                ui.label(money(expense["amount"], currency)).classes(
+                                    "text-xl font-bold text-slate-800"
+                                )
+                                ui.label(
+                                    expense["description"] or "No description"
+                                ).classes("text-slate-500")
+                                ui.label(str(expense["expense_date"])).classes(
+                                    "text-xs text-slate-400"
+                                )
+
+                            with ui.row().classes("gap-2"):
+                                ui.button(
+                                    "Edit",
+                                    icon="edit",
+                                    on_click=lambda e_id=expense["id"]: show_edit_expense(
+                                        e_id,
+                                        back_budget_id=budget_id,
+                                        back_category_id=category_id,
+                                    ),
+                                ).props("outline")
+
+                                ui.button(
+                                    "Delete",
+                                    icon="delete",
+                                    on_click=lambda e_id=expense["id"]: confirm_delete_expense(
+                                        e_id,
+                                        budget_id,
+                                        category_id,
+                                    ),
+                                ).classes("bg-red-600 text-white rounded-lg")
+
+        render_expenses(data["expenses"])

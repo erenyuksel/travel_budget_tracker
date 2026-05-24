@@ -3,10 +3,7 @@ from nicegui import ui
 from app_context import APP_TITLE
 
 
-# -----------------------------
-# Header / navigation
-# Person 1 can own this file.
-# -----------------------------
+
 
 def app_header():
     from pages.home_page import show_home

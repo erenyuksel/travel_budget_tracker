@@ -3,9 +3,7 @@ from nicegui import ui
 import app_context
 
 
-# -----------------------------
-# Helpers shared by both teammates
-# -----------------------------
+
 
 def money(amount, currency):
     return f"{float(amount):,.2f} {currency}"

@@ -12,9 +12,9 @@ from services import (
 from models import CategoryAllocation
 
 
-# -------------------------
+
 # Test DB setup
-# -------------------------
+
 @pytest.fixture
 def session():
     engine = create_engine("sqlite:///:memory:")

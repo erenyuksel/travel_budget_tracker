@@ -1,5 +1,4 @@
-# This file is optional.
-# It contains simple Pydantic models in case the backend teammate wants input validation.
+# It contains simple Pydantic models for input validation.
 
 from datetime import date, datetime
 from pydantic import BaseModel, Field

@@ -2,13 +2,11 @@ from db import engine, SessionLocal
 from services import create_tables
 
 
-APP_TITLE = "Travel Budget Tracker"
+APP_TITLE = "Trip Tracker"
 
 create_tables(engine)
 session = SessionLocal()
 
-# NiceGUI content container is created in app.py and stored here
-# so all page files can reuse the same main area.
 content = None
 
 

@@ -19,11 +19,6 @@ from ui_helpers import (
 )
 
 
-# -----------------------------
-# Add / Edit / Delete Expense
-# Person 2 responsibility
-# -----------------------------
-
 def get_category_options(budget_id):
     data = get_dashboard_data(app_context.session, budget_id)
 
@@ -52,19 +47,35 @@ def show_add_expense_dialog(budget_id, category_id, return_category_id=None):
         )
 
         amount_input = ui.number(
-            "Amount spent just now",
+            "Amount spent",
             value=0,
         ).classes("w-full mt-4")
 
+        date_input = ui.input(
+            "Expense date",
+            value=str(date.today()),
+            placeholder="YYYY-MM-DD",
+        ).classes("w-full mt-2")
+
+        description_input = ui.input(
+            "Description",
+            placeholder="Example: Dinner, train ticket, museum ticket",
+        ).classes("w-full mt-2")
+
         def save_expense():
             try:
+                description = description_input.value
+
+                if not description:
+                    description = f"Expense for {selected_category['name']}"
+
                 add_expense(
                     session=app_context.session,
                     budget_id=budget_id,
                     category_id=category_id,
                     amount=amount_input.value,
-                    expense_date=date.today(),
-                    description=f"Expense for {selected_category['name']}",
+                    expense_date=date_input.value,
+                    description=description,
                 )
 
                 dialog.close()
@@ -130,7 +141,10 @@ def show_edit_expense(expense_id, back_budget_id=None, back_category_id=None):
         )
 
         with ui.card().classes("w-full max-w-3xl rounded-2xl shadow-sm p-6 mt-6 bg-white"):
-            amount_input = ui.number("Amount", value=expense.amount).classes("w-full")
+            amount_input = ui.number(
+                "Amount",
+                value=expense.amount,
+            ).classes("w-full")
 
             category_select = ui.select(
                 list(category_names_to_ids.keys()),
@@ -139,7 +153,7 @@ def show_edit_expense(expense_id, back_budget_id=None, back_category_id=None):
             ).classes("w-full")
 
             date_input = ui.input(
-                "Date",
+                "Expense date",
                 value=str(expense.expense_date),
                 placeholder="YYYY-MM-DD",
             ).classes("w-full")
