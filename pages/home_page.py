@@ -13,7 +13,6 @@ from ui_helpers import (
 )
 
 
-
 def show_home():
     from pages.budget_pages import (
         show_create_budget,
@@ -54,6 +53,7 @@ def show_home():
                 try:
                     data = get_dashboard_data(app_context.session, budget.id)
                     summary = data["summary"]
+                    remaining_budget = summary["remaining_budget"]
 
                     with ui.card().classes(
                         "rounded-2xl shadow-sm border border-slate-100 p-5 bg-white"
@@ -90,8 +90,12 @@ def show_home():
                             with ui.column().classes("gap-0 flex-1"):
                                 ui.label("Remaining").classes("text-xs text-slate-400")
                                 ui.label(
-                                    money(summary["remaining_budget"], data["currency"])
-                                ).classes("font-semibold text-green-600")
+                                    money(remaining_budget, data["currency"])
+                                ).classes(
+                                    "font-semibold text-green-600"
+                                    if remaining_budget >= 0
+                                    else "font-semibold text-red-600"
+                                )
 
                         progress = safe_ratio(
                             summary["total_spent"],
