@@ -404,9 +404,7 @@ Used for automated unit and database tests.
 
 ### Shaymaa Zaiter
 
-- Frontend: Core app setup and structure
-- UI layout and helpers
-- Home and budget pages
+- Frontend: Core app setup and structure, UI layout and helpers, Home and budget pages
 - Unit tests
 - README file
 
